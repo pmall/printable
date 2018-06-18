@@ -131,7 +131,7 @@ class Printable
     /**
      * Return a formatted string from the given object.
      *
-     * @param mixed $value
+     * @param object $value
      * @return string
      */
     private function object($value): string
