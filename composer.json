@@ -1,0 +1,29 @@
+{
+    "name": "quanta/printable",
+    "type": "library",
+    "description": "Utility class for printing a simple string representation of any php value",
+    "license": "MIT",
+    "homepage": "https://github.com/quanta/printable",
+    "support": {
+        "issues": "https://github.com/quanta/printable/issues",
+        "source": "https://github.com/quanta/printable"
+    },
+    "authors": [
+        {
+            "name": "pmall",
+            "email": "pierre.mallinjoud@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=5.0"
+    },
+    "require-dev": {
+        "kahlan/kahlan": "^4.0",
+        "eloquent/phony-kahlan": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Quanta\\": "src"
+        }
+    }
+}
