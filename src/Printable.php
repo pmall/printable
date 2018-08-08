@@ -2,8 +2,6 @@
 
 namespace Quanta;
 
-use ReflectionClass;
-
 class Printable
 {
     /**
