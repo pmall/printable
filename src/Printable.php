@@ -12,13 +12,6 @@ class Printable
     private $value;
 
     /**
-     * Whether the value should be represented as a callable when it's callable.
-     *
-     * @param bool
-     */
-    private $callable;
-
-    /**
      * The string length limit.
      *
      * @var int
@@ -36,14 +29,12 @@ class Printable
      * Constructor.
      *
      * @param mixed $value
-     * @param bool  $callable
      * @param int   $strlim
      * @param int   $arrlim
      */
-    public function __construct($value, bool $callable = false, int $strlim = 20, int $arrlim = 2)
+    public function __construct($value, int $strlim = 20, int $arrlim = 3)
     {
         $this->value = $value;
-        $this->callable = $callable;
         $this->strlim = $strlim;
         $this->arrlim = $arrlim;
     }
@@ -56,7 +47,7 @@ class Printable
      */
     public function withStringLimit(int $strlim): Printable
     {
-        return new Printable($this->value, $this->callable, $strlim, $this->arrlim);
+        return new Printable($this->value, $strlim, $this->arrlim);
     }
 
     /**
@@ -67,7 +58,7 @@ class Printable
      */
     public function withArrayLimit(int $arrlim): Printable
     {
-        return new Printable($this->value, $this->callable, $this->strlim, $arrlim);
+        return new Printable($this->value, $this->strlim, $arrlim);
     }
 
     /**
@@ -78,8 +69,6 @@ class Printable
     public function __toString()
     {
         $type = gettype($this->value);
-
-        $callable = $this->callable && is_callable($this->value);
 
         switch ($type) {
             case 'boolean':
@@ -92,19 +81,13 @@ class Printable
                 return $this->float($this->value);
                 break;
             case 'string':
-                return ! $callable
-                    ? $this->string($this->value)
-                    : $this->callableString($this->value);
+                return $this->string($this->value);
                 break;
             case 'array':
-                return ! $callable
-                    ? $this->array($this->value)
-                    : $this->callableArray($this->value);
+                return $this->array($this->value);
                 break;
             case 'object':
-                return ! $callable
-                    ? $this->object($this->value)
-                    : $this->callableObject($this->value);
+                return $this->object($this->value);
                 break;
             case 'resource':
                 return $this->resource($this->value);
@@ -126,7 +109,7 @@ class Printable
      */
     private function boolean(bool $value): string
     {
-        return $this->formatted('bool', $value ? 'true' : 'false');
+        return $value ? 'true' : 'false';
     }
 
     /**
@@ -137,7 +120,7 @@ class Printable
      */
     private function int(int $value): string
     {
-        return $this->formatted('int', $value);
+        return (string) $value;
     }
 
     /**
@@ -148,33 +131,27 @@ class Printable
      */
     private function float(float $value): string
     {
-        return $this->formatted('float', $value);
+        return (string) $value;
     }
 
     /**
      * Return a formatted string from the given string.
+     *
+     * Prepend the string with an ellipsis when it is longer than the limit
+     * except when the string is a callable or a class name.
      *
      * @param string $value
      * @return string
      */
     private function string(string $value): string
     {
-        $str = strlen($value) > $this->strlim
+        $cut = strlen($value) > $this->strlim
+            && ! is_callable($value)
+            && ! class_exists($value);
+
+        return $cut
             ? $this->quoted(substr($value, 0, $this->strlim) . '...')
             : $this->quoted($value);
-
-        return $this->formatted('string', $str);
-    }
-
-    /**
-     * Return a formatted string from the given callable string.
-     *
-     * @param string $value
-     * @return string
-     */
-    private function callableString(string $value): string
-    {
-        return $this->formatted('callable', $value);
     }
 
     /**
@@ -187,17 +164,14 @@ class Printable
     {
         $slice = array_slice($value, 0, $this->arrlim, true);
 
-        $keys = array_keys($slice);
-        $vals = array_values($slice);
+        $elems = $this->isAssociative($slice)
+            ? array_map([$this, 'arrayPair'], array_keys($slice), $slice)
+            : array_map([$this, 'arrayValue'], $slice);
 
-        $pairs = array_map([$this, 'arrayPair'], $keys, $vals);
-
-        $str = vsprintf('[%s%s]', [
-            implode(', ', $pairs),
+        return vsprintf('[%s%s]', [
+            implode(', ', $elems),
             count($value) > $this->arrlim ? ', ...' : '',
         ]);
-
-        return $this->formatted('array', $str);
     }
 
     /**
@@ -211,30 +185,20 @@ class Printable
     {
         $key_str = is_int($key) ? $key : $this->quoted($key);
 
-        $val_str = is_array($val)
-            ? $this->formatted('array', '[...]')
-            : new Printable($val);
+        $val_str = $this->arrayValue($val);
 
         return sprintf('%s => %s', $key_str, $val_str);
     }
 
     /**
-     * Return a formatted string from the given callable array.
+     * Return a formatted strinf for the given array value.
      *
-     * @param array $value
+     * @param mixed $val
      * @return string
      */
-    private function callableArray(array $value): string
+    private function arrayValue($val): string
     {
-        $source = is_string($value[0])
-            ? $this->quoted($value[0])
-            : $this->object($value[0]);
-
-        $method = $this->quoted($value[1]);
-
-        $str = sprintf('[%s, %s]', $source, $method);
-
-        return $this->formatted('callable', $str);
+        return ! is_array($val) ? (string) new Printable($val) : '[...]';
     }
 
     /**
@@ -247,20 +211,7 @@ class Printable
     {
         $class = $this->classname($value);
 
-        return $this->formatted('object', $class);
-    }
-
-    /**
-     * Return a formatted string from the given callable object.
-     *
-     * @param object $value
-     * @return string
-     */
-    private function callableObject($value): string
-    {
-        $class = $this->classname($value);
-
-        return $this->formatted('callable', $class);
+        return sprintf('(instance) %s', $class);
     }
 
     /**
@@ -271,19 +222,7 @@ class Printable
      */
     private function resource($value): string
     {
-        return $this->formatted('resource', $value);
-    }
-
-    /**
-     * Return a formatted string.
-     *
-     * @param string $type
-     * @param string $value
-     * @return string
-     */
-    private function formatted(string $type, $value): string
-    {
-        return sprintf('(%s) %s', $type, $value);
+        return (string) $value;
     }
 
     /**
@@ -292,7 +231,7 @@ class Printable
      * @param string $value
      * @return string
      */
-    private function quoted($value): string
+    private function quoted(string $value): string
     {
         return sprintf('\'%s\'', $value);
     }
@@ -310,5 +249,16 @@ class Printable
         return preg_match('/^class@anonymous/', $class)
             ? 'class@anonymous'
             : $class;
+    }
+
+    /**
+     * Return whether the given array is associative.
+     *
+     * @param array $value
+     * @return bool
+     */
+    private function isAssociative(array $value): bool
+    {
+        return count(array_filter(array_keys($value), 'is_string')) > 0;
     }
 }

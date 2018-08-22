@@ -4,24 +4,29 @@ use Quanta\Printable;
 
 function printable_test () {};
 
-class PrintableTest {
-    public function test() {}
-    public static function staticTest() {}
-    public function __invoke() {}
-}
-
-
 describe('Printable', function () {
+
+    it('should have 20 as default string limit', function () {
+
+        expect(new Printable('test'))->toEqual(new Printable('test', 20));
+
+    });
+
+    it('should have 3 as default array limit', function () {
+
+        expect(new Printable('test'))->toEqual(new Printable('test', 20, 3));
+
+    });
 
     describe('->withStringLimit()', function () {
 
         it('should return a new Printable with the given string limit', function () {
 
-            $printable = new Printable('test', true);
+            $printable = new Printable('test', 50, 50);
 
             $test = $printable->withStringLimit(100);
 
-            $expected = new Printable('test', true, 100);
+            $expected = new Printable('test', 100, 50);
 
             expect($test)->toEqual($expected);
 
@@ -33,11 +38,11 @@ describe('Printable', function () {
 
         it('should return a new Printable with the given array limit', function () {
 
-            $printable = new Printable('test', true);
+            $printable = new Printable('test', 50, 50);
 
             $test = $printable->withArrayLimit(100);
 
-            $expected = new Printable('test', true, 20, 100);
+            $expected = new Printable('test', 50, 100);
 
             expect($test)->toEqual($expected);
 
@@ -47,69 +52,59 @@ describe('Printable', function () {
 
     describe('->__toString()', function () {
 
-        context('when the callable flag is set to false', function () {
+        context('when the value is a boolean', function () {
 
-            beforeEach(function () {
+            context('when the value is true', function () {
 
-                $this->printable = function (...$xs) {
-                    return count($xs) == 1
-                        ? expect((string) new Printable(array_shift($xs)))
-                        : expect((string) new Printable(array_shift($xs), false, ...$xs));
-                };
+                it('should have (bool) true as string representation', function () {
 
-            });
-
-            context('when the value is a boolean', function () {
-
-                context('when the value is true', function () {
-
-                    it('should have (bool) true as string representation', function () {
-
-                        $this->printable(true)->toEqual('(bool) true');
-
-                    });
-
-                });
-
-                context('when the value is false', function () {
-
-                    it('should have (bool) false as string representation', function () {
-
-                        $this->printable(false)->toEqual('(bool) false');
-
-                    });
+                    expect(new Printable(true))->toEqual('true');
 
                 });
 
             });
 
-            context('when the value is an integer', function () {
+            context('when the value is false', function () {
 
-                it('should have (int) {x} as string representation', function () {
+                it('should have (bool) false as string representation', function () {
 
-                    $this->printable(1)->toEqual('(int) 1');
-
-                });
-
-            });
-
-            context('when the value is a float', function () {
-
-                it('should have (float) {x} as string representation', function () {
-
-                    $this->printable(1.111)->toEqual('(float) 1.111');
+                    expect(new Printable(false))->toEqual('false');
 
                 });
 
             });
 
-            context('when the value is a string', function () {
+        });
+
+        context('when the value is an integer', function () {
+
+            it('should have {x} as string representation', function () {
+
+                expect(new Printable(1))->toEqual('1');
+
+            });
+
+        });
+
+        context('when the value is a float', function () {
+
+            it('should have {x} as string representation', function () {
+
+                expect(new Printable(1.111))->toEqual('1.111');
+
+            });
+
+        });
+
+        context('when the value is a string', function () {
+
+            context('when the string is not a class name', function () {
 
                 context('when the string is shorter than the limit', function () {
 
-                    it('should have (string) {x} as string representation', function () {
+                    it('should have \'{x}\' as string representation', function () {
 
-                        $this->printable('01234', 5)->toEqual('(string) \'01234\'');
+                        expect(new Printable('01234', 5))->toEqual('\'01234\'');
 
                     });
 
@@ -117,9 +112,9 @@ describe('Printable', function () {
 
                 context('when the string is longer than the limit', function () {
 
-                    it('should have (string) {x}... as string representation', function () {
+                    it('should have \'{x}...\' as string representation', function () {
 
-                        $this->printable('0123456789', 5)->toEqual('(string) \'01234...\'');
+                        expect(new Printable('0123456789', 5))->toEqual('\'01234...\'');
 
                     });
 
@@ -127,11 +122,43 @@ describe('Printable', function () {
 
             });
 
-            context('when the value is an array', function () {
+            context('when the string is callable', function () {
 
-                context('when the array number of elements is shorter than or equal to the limit', function () {
+                context('when the string is longer than the limit', function () {
 
-                    it('should have (array) [{x}] as string representation', function () {
+                    it('should have \'{x}\' as string representation anyway', function () {
+
+                        expect(new Printable('printable_test', 5))->toEqual('\'printable_test\'');
+
+                    });
+
+                });
+
+            });
+
+            context('when the string is a class name', function () {
+
+                context('when the string is longer than the limit', function () {
+
+                    it('should have \'{x}\' as string representation anyway', function () {
+
+                        expect(new Printable(stdClass::class, 5))->toEqual('\'stdClass\'');
+
+                    });
+
+                });
+
+            });
+
+        });
+
+        context('when the value is an array', function () {
+
+            context('when the array number of elements is shorter than or equal to the limit', function () {
+
+                context('when the array is associative', function () {
+
+                    it('should have [{k} => {v}] as string representation', function () {
 
                         $resource = tmpfile();
 
@@ -146,42 +173,52 @@ describe('Printable', function () {
                             null,
                         ];
 
-                        $expected = sprintf('(array) [%s]', implode(', ', [
-                            "'k1' => (bool) true",
-                            "0 => (int) 1",
-                            "'k3' => (float) 1.111",
-                            "1 => (string) 'value'",
-                            "'k5' => (array) [...]",
-                            "2 => (object) class@anonymous",
+                        $expected = sprintf('[%s]', implode(', ', [
+                            "'k1' => true",
+                            "0 => 1",
+                            "'k3' => 1.111",
+                            "1 => 'value'",
+                            "'k5' => [...]",
+                            "2 => (instance) class@anonymous",
                             sprintf("'k6' => %s", new Printable($resource)),
                             "3 => NULL",
                         ]));
 
-                        $this->printable($value, 20, 8)->toEqual($expected);
+                        expect(new Printable($value, 20, 8))->toEqual($expected);
 
                     });
 
                 });
 
-                context('when the array number of elements is greater than the limit', function () {
+                context('when the array is not associative', function () {
 
-                    it('should have (array) [{x}, ...] as string representation', function () {
+                    it('should have [{v}] as string representation', function () {
 
-                        $value = range(0, 8);
+                        $resource = tmpfile();
 
-                        $expected = sprintf('(array) [%s]', implode(', ', [
-                            '0 => (int) 0',
-                            '1 => (int) 1',
-                            '2 => (int) 2',
-                            '3 => (int) 3',
-                            '4 => (int) 4',
-                            '5 => (int) 5',
-                            '6 => (int) 6',
-                            '7 => (int) 7',
-                            '...',
+                        $value = [
+                            true,
+                            1,
+                            1.111,
+                            'value',
+                            [],
+                            new class {},
+                            $resource,
+                            null,
+                        ];
+
+                        $expected = sprintf('[%s]', implode(', ', [
+                            "true",
+                            "1",
+                            "1.111",
+                            "'value'",
+                            "[...]",
+                            "(instance) class@anonymous",
+                            (string) new Printable($resource),
+                            "NULL",
                         ]));
 
-                        $this->printable($value, 20, 8)->toEqual($expected);
+                        expect(new Printable($value, 20, 8))->toEqual($expected);
 
                     });
 
@@ -189,57 +226,65 @@ describe('Printable', function () {
 
             });
 
-            context('when the value is an object', function () {
+            context('when the array number of elements is greater than the limit', function () {
 
-                context('when the object is anonymous', function () {
+                context('when the sliced array is associative', function () {
 
-                    it('should have (object) class@anonymous as string representation', function () {
+                    it('should have [{k} => {v}, ...] as string representation', function () {
 
-                        $this->printable(new class {})->toEqual('(object) class@anonymous');
+                        $value = [
+                            'k1' => true,
+                            1,
+                            'k3' => 1.111,
+                            'value',
+                            'k5' => [],
+                            new class {},
+                            'k6' => tmpfile(),
+                            null,
+                        ];
+
+                        $expected = sprintf('[%s, ...]', implode(', ', [
+                            "'k1' => true",
+                            "0 => 1",
+                            "'k3' => 1.111",
+                            "1 => 'value'",
+                            "'k5' => [...]",
+                            "2 => (instance) class@anonymous",
+                        ]));
+
+                        expect(new Printable($value, 20, 6))->toEqual($expected);
 
                     });
 
                 });
 
-                context('when the object is not anonymous', function () {
+                context('when the sliced array is not associative', function () {
 
-                    it('should have (object) {classname} as string representation', function () {
+                    it('should have [{v}, ...] as string representation', function () {
 
-                        $this->printable(new stdClass)->toEqual('(object) stdClass');
+                        $value = [
+                            true,
+                            1,
+                            1.111,
+                            'value',
+                            [],
+                            new class {},
+                            'k6' => tmpfile(),
+                            null,
+                        ];
+
+                        $expected = sprintf('[%s, ...]', implode(', ', [
+                            "true",
+                            "1",
+                            "1.111",
+                            "'value'",
+                            "[...]",
+                            "(instance) class@anonymous",
+                        ]));
+
+                        expect(new Printable($value, 20, 6))->toEqual($expected);
 
                     });
-
-                });
-
-            });
-
-            context('when the value is a resource', function () {
-
-                it('should have (resource) Resource id #{x} as string representation', function () {
-
-                    $this->printable(tmpfile())->toMatch('/^\(resource\) Resource id #[0-9]+$/');
-
-                });
-
-            });
-
-            context('when the value is null', function () {
-
-                it('should have NULL as string representation', function () {
-
-                    $this->printable(null)->toEqual('NULL');
-
-                });
-
-            });
-
-            context('when the value is unknown', function () {
-
-                it('should have (unknown type) as string representation', function () {
-
-                    allow('gettype')->toBeCalled()->andReturn('unknown type');
-
-                    $this->printable('unknown')->toEqual('(unknown type)');
 
                 });
 
@@ -247,195 +292,57 @@ describe('Printable', function () {
 
         });
 
-        context('when the callable flag is set to true', function () {
+        context('when the value is an object', function () {
 
-            beforeEach(function () {
+            context('when the object is anonymous', function () {
 
-                $this->printable = function (...$xs) {
-                    return expect((string) new Printable(array_shift($xs), true, ...$xs));
-                };
+                it('should have (instance) class@anonymous as string representation', function () {
 
-            });
-
-            context('when the value is a boolean', function () {
-
-                it('should still be represented as a boolean', function () {
-
-                    $this->printable(true)->toMatch('/^\(bool\)/');
+                    expect(new Printable(new class {}))->toEqual('(instance) class@anonymous');
 
                 });
 
             });
 
-            context('when the value is an integer', function () {
+            context('when the object is not anonymous', function () {
 
-                it('should still be represented as an integer', function () {
+                it('should have (instance) {classname} as string representation', function () {
 
-                    $this->printable(1)->toMatch('/^\(int\)/');
-
-                });
-
-            });
-
-            context('when the value is a float', function () {
-
-                it('should still be represented as a float', function () {
-
-                    $this->printable(1.111)->toMatch('/^\(float\)/');
+                    expect(new Printable(new stdClass))->toEqual('(instance) stdClass');
 
                 });
 
             });
 
-            context('when the value is a string', function () {
+        });
 
-                context('when the string is not callable', function () {
+        context('when the value is a resource', function () {
 
-                    it('should still be represented as a string', function () {
+            it('should have Resource id #{x} as string representation', function () {
 
-                        $this->printable('value')->toMatch('/^\(string\)/');
-
-                    });
-
-                });
-
-                context('when the string is callable', function () {
-
-                    context('when the string is a function name', function () {
-
-                        it('should have (callable) {x} as string representation', function () {
-
-                            $this->printable('printable_test')->toEqual('(callable) printable_test');
-
-                        });
-
-                    });
-
-                    context('when the string is a representation of a static method', function () {
-
-                        it('should have (callable) {x} as string representation', function () {
-
-                            $this->printable('PrintableTest::staticTest')->toEqual('(callable) PrintableTest::staticTest');
-
-                        });
-
-                    });
-
-                });
+                expect((string) new Printable(tmpfile()))->toMatch('/^Resource id #[0-9]+$/');
 
             });
 
-            context('when the value is an array', function () {
+        });
 
-                context('when the array is not callable', function () {
+        context('when the value is null', function () {
 
-                    it('should still be represented as an array', function () {
+            it('should have NULL as string representation', function () {
 
-                        $this->printable([])->toMatch('/^\(array\)/');
-
-                    });
-
-                });
-
-                context('when the array is callable', function () {
-
-                    context('when the array is a representation of a static method', function () {
-
-                        it('should have (callable) [{class}, {method}] as string representation', function () {
-
-                            $expected = sprintf('(callable) [\'%s\', \'staticTest\']', PrintableTest::class);
-
-                            $this->printable([PrintableTest::class, 'staticTest'])->toEqual($expected);
-
-                        });
-
-                    });
-
-                    context('when the array is a representation of an instance method', function () {
-
-                        it('should have (callable) [{object}, {method}] as string representation', function () {
-
-                            $expected = sprintf('(callable) [(object) %s, \'test\']', PrintableTest::class);
-
-                            $this->printable([new PrintableTest, 'test'])->toEqual($expected);
-
-                        });
-
-                    });
-
-                });
+                expect(new Printable(null))->toEqual('NULL');
 
             });
 
-            context('when the value is an object', function () {
+        });
 
-                context('when the object is not callable', function () {
+        context('when the value is unknown', function () {
 
-                    it('should still be represented as an object', function () {
+            it('should have (unknown type) as string representation', function () {
 
-                        $this->printable(new class {})->toMatch('/^\(object\)/');
+                allow('gettype')->toBeCalled()->andReturn('unknown type');
 
-                    });
-
-                });
-
-                context('when the object is callable', function () {
-
-                    context('when the object is a closure', function () {
-
-                        it('should have (callable) Closure as string representation', function () {
-
-                            $this->printable(function () {})->toEqual('(callable) Closure');
-
-                        });
-
-                    });
-
-                    context('when the object is invokable', function () {
-
-                        it('should have (callable) {class} as string representation', function () {
-
-                            $expected = sprintf('(callable) %s', PrintableTest::class);
-
-                            $this->printable(new PrintableTest)->toEqual($expected);
-
-                        });
-
-                    });
-
-                });
-
-            });
-
-            context('when the value is a resource', function () {
-
-                it('should still be represented as a resource', function () {
-
-                    $this->printable(tmpfile())->toMatch('/^\(resource\)/');
-
-                });
-
-            });
-
-            context('when the value is null', function () {
-
-                it('should have NULL as string representation', function () {
-
-                    $this->printable(null)->toEqual('NULL');
-
-                });
-
-            });
-
-            context('when the value is unknown', function () {
-
-                it('should have (unknown type) as string representation', function () {
-
-                    allow('gettype')->toBeCalled()->andReturn('unknown type');
-
-                    $this->printable('unknown')->toEqual('(unknown type)');
-
-                });
+                expect(new Printable('unknown'))->toEqual('(unknown type)');
 
             });
 
