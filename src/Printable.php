@@ -12,6 +12,13 @@ class Printable
     private $value;
 
     /**
+     * Whether the value should be represented as a callable.
+     *
+     * @var bool
+     */
+    private $callable;
+
+    /**
      * The string length limit.
      *
      * @var int
@@ -29,12 +36,14 @@ class Printable
      * Constructor.
      *
      * @param mixed $value
+     * @param bool  $callable
      * @param int   $strlim
      * @param int   $arrlim
      */
-    public function __construct($value, int $strlim = 20, int $arrlim = 3)
+    public function __construct($value, bool $callable = false, int $strlim = 20, int $arrlim = 3)
     {
         $this->value = $value;
+        $this->callable = $callable;
         $this->strlim = $strlim;
         $this->arrlim = $arrlim;
     }
@@ -47,7 +56,7 @@ class Printable
      */
     public function withStringLimit(int $strlim): Printable
     {
-        return new Printable($this->value, $strlim, $this->arrlim);
+        return new Printable($this->value, $this->callable, $strlim, $this->arrlim);
     }
 
     /**
@@ -58,7 +67,7 @@ class Printable
      */
     public function withArrayLimit(int $arrlim): Printable
     {
-        return new Printable($this->value, $this->strlim, $arrlim);
+        return new Printable($this->value, $this->callable, $this->strlim, $arrlim);
     }
 
     /**
@@ -145,11 +154,11 @@ class Printable
      */
     private function string(string $value): string
     {
-        $cut = strlen($value) > $this->strlim
-            && ! is_callable($value)
-            && ! class_exists($value);
+        if ($this->callable && is_callable($value)) {
+            return sprintf('function %s()', $value);
+        }
 
-        return $cut
+        return strlen($value) > $this->strlim && ! class_exists($value)
             ? $this->quoted(substr($value, 0, $this->strlim) . '...')
             : $this->quoted($value);
     }
@@ -162,6 +171,16 @@ class Printable
      */
     private function array(array $value): string
     {
+        if ($this->callable && is_callable($value)) {
+            $class = ! is_string($value[0])
+                ? $this->classname($value[0])
+                : $value[0];
+
+            $method = $value[1];
+
+            return sprintf('function %s::%s()', $class, $method);
+        }
+
         $slice = array_slice($value, 0, $this->arrlim, true);
 
         $elems = $this->isAssociative($slice)
@@ -198,7 +217,9 @@ class Printable
      */
     private function arrayValue($val): string
     {
-        return ! is_array($val) ? (string) new Printable($val) : '[...]';
+        return ! is_array($val)
+            ? (string) new Printable($val, $this->callable, $this->strlim)
+            : '[...]';
     }
 
     /**
@@ -211,8 +232,12 @@ class Printable
     {
         $class = $this->classname($value);
 
-        return $class == \Closure::class
-            ? 'function {closure}()'
+        if ($class == \Closure::class) {
+            return 'function {closure}()';
+        }
+
+        return ($this->callable && is_callable($value))
+            ? sprintf('function %s::__invoke()', $class)
             : sprintf('(instance) %s', $class);
     }
 
