@@ -306,9 +306,23 @@ describe('Printable', function () {
 
             context('when the object is not anonymous', function () {
 
-                it('should have (instance) {classname} as string representation', function () {
+                context('when the object is not a closure', function () {
 
-                    expect(new Printable(new stdClass))->toEqual('(instance) stdClass');
+                    it('should have (instance) {classname} as string representation', function () {
+
+                        expect(new Printable(new stdClass))->toEqual('(instance) stdClass');
+
+                    });
+
+                });
+
+                context('when the object is a closure', function () {
+
+                    it('should has function {closure}() as string representation', function () {
+
+                        expect(new Printable(function () {}))->toEqual('function {closure}()');
+
+                    });
 
                 });
 

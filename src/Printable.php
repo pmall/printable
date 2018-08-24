@@ -211,7 +211,9 @@ class Printable
     {
         $class = $this->classname($value);
 
-        return sprintf('(instance) %s', $class);
+        return $class == \Closure::class
+            ? 'function {closure}()'
+            : sprintf('(instance) %s', $class);
     }
 
     /**
