@@ -113,39 +113,21 @@ describe('Printable', function () {
 
             context('when the callable flag is set to false', function () {
 
-                context('when the string is not a class name', function () {
+                context('when the string is shorter than the limit', function () {
 
-                    context('when the string is shorter than the limit', function () {
+                    it('should have \'{x}\' as string representation', function () {
 
-                        it('should have \'{x}\' as string representation', function () {
-
-                            expect(new Printable('01234', false, 5))->toEqual('\'01234\'');
-
-                        });
-
-                    });
-
-                    context('when the string is longer than the limit', function () {
-
-                        it('should have \'{x}...\' as string representation', function () {
-
-                            expect(new Printable('0123456789', false, 5))->toEqual('\'01234...\'');
-
-                        });
+                        expect(new Printable('01234', false, 5))->toEqual('\'01234\'');
 
                     });
 
                 });
 
-                context('when the string is a class name', function () {
+                context('when the string is longer than the limit', function () {
 
-                    context('when the string is longer than the limit', function () {
+                    it('should have \'{x}...\' as string representation', function () {
 
-                        it('should have \'{x}\' as string representation anyway', function () {
-
-                            expect(new Printable(stdClass::class, false, 5))->toEqual('\'stdClass\'');
-
-                        });
+                        expect(new Printable('0123456789', false, 5))->toEqual('\'01234...\'');
 
                     });
 

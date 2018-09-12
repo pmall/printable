@@ -146,8 +146,7 @@ class Printable
     /**
      * Return a formatted string from the given string.
      *
-     * Prepend the string with an ellipsis when it is longer than the limit
-     * except when the string is a callable or a class name.
+     * Prepend the string with an ellipsis when it is longer than the limit.
      *
      * @param string $value
      * @return string
@@ -158,7 +157,7 @@ class Printable
             return sprintf('function %s()', $value);
         }
 
-        return strlen($value) > $this->strlim && ! class_exists($value)
+        return strlen($value) > $this->strlim
             ? $this->quoted(substr($value, 0, $this->strlim) . '...')
             : $this->quoted($value);
     }
