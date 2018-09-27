@@ -190,7 +190,7 @@ describe('Printable', function () {
                                 "'k3' => 1.111",
                                 "1 => 'value'",
                                 "'k5' => [...]",
-                                "2 => (instance) class@anonymous",
+                                "2 => Object(class@anonymous)",
                                 sprintf("'k6' => %s", new Printable($resource)),
                                 "3 => NULL",
                             ]));
@@ -224,7 +224,7 @@ describe('Printable', function () {
                                 "1.111",
                                 "'value'",
                                 "[...]",
-                                "(instance) class@anonymous",
+                                "Object(class@anonymous)",
                                 (string) new Printable($resource),
                                 "NULL",
                             ]));
@@ -260,7 +260,7 @@ describe('Printable', function () {
                                 "'k3' => 1.111",
                                 "1 => 'value'",
                                 "'k5' => [...]",
-                                "2 => (instance) class@anonymous",
+                                "2 => Object(class@anonymous)",
                             ]));
 
                             expect(new Printable($value, false, 20, 6))->toEqual($expected);
@@ -290,7 +290,7 @@ describe('Printable', function () {
                                 "1.111",
                                 "'value'",
                                 "[...]",
-                                "(instance) class@anonymous",
+                                "Object(class@anonymous)",
                             ]));
 
                             expect(new Printable($value, false, 20, 6))->toEqual($expected);
@@ -367,9 +367,9 @@ describe('Printable', function () {
 
                 context('when the object is anonymous', function () {
 
-                    it('should have (instance) class@anonymous as string representation', function () {
+                    it('should have Object(class@anonymous) as string representation', function () {
 
-                        expect(new Printable(new class {}))->toEqual('(instance) class@anonymous');
+                        expect(new Printable(new class {}))->toEqual('Object(class@anonymous)');
 
                     });
 
@@ -379,9 +379,9 @@ describe('Printable', function () {
 
                     context('when the object is not a closure', function () {
 
-                        it('should have (instance) {classname} as string representation', function () {
+                        it('should have Object({)classname} as string representation', function () {
 
-                            expect(new Printable(new stdClass))->toEqual('(instance) stdClass');
+                            expect(new Printable(new stdClass))->toEqual('Object(stdClass)');
 
                         });
 
@@ -447,7 +447,7 @@ describe('Printable', function () {
 
                     it('should have the same string representation as any object', function () {
 
-                        expect(new Printable(new stdClass), true)->toEqual('(instance) stdClass');
+                        expect(new Printable(new stdClass), true)->toEqual('Object(stdClass)');
 
                     });
 

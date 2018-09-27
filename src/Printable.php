@@ -237,7 +237,7 @@ class Printable
 
         return ($this->callable && is_callable($value))
             ? sprintf('function %s::__invoke()', $class)
-            : sprintf('(instance) %s', $class);
+            : sprintf('Object(%s)', $class);
     }
 
     /**
