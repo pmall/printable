@@ -3,10 +3,10 @@
     "type": "library",
     "description": "Utility class for printing a simple string representation of any php value",
     "license": "MIT",
-    "homepage": "https://github.com/quanta/printable",
+    "homepage": "https://github.com/quantaphp/printable",
     "support": {
-        "issues": "https://github.com/quanta/printable/issues",
-        "source": "https://github.com/quanta/printable"
+        "issues": "https://github.com/quantaphp/printable/issues",
+        "source": "https://github.com/quantaphp/printable"
     },
     "authors": [
         {
@@ -14,6 +14,9 @@
             "email": "pierre.mallinjoud@gmail.com"
         }
     ],
+    "config": {
+        "sort-packages": true
+    },
     "require": {
         "php": ">=5.0"
     },
